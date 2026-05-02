@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
 from datetime import date
 
@@ -11,6 +12,36 @@ from rank_bm25 import BM25Okapi
 from medlit.logging import logger
 from medlit.models import Chunk, Source
 from medlit.storage.base import SearchFilter, VectorStore
+
+# ChromaDB rejects metadata values that are None or list[*]. We drop None and
+# JSON-encode lists with this prefix so we can recover them on read.
+_LIST_PREFIX = "__list__:"
+_LIST_FIELDS = {"authors", "mesh_terms", "publication_types"}
+
+
+def _sanitize(md: dict) -> dict:
+    out: dict[str, str | int | float | bool] = {}
+    for k, v in md.items():
+        if v is None:
+            continue
+        if isinstance(v, list):
+            out[k] = _LIST_PREFIX + json.dumps(v)
+        elif isinstance(v, (str, int, float, bool)):
+            out[k] = v
+        else:
+            out[k] = str(v)
+    return out
+
+
+def _decode_list(v: object) -> list:
+    if isinstance(v, list):
+        return v
+    if isinstance(v, str) and v.startswith(_LIST_PREFIX):
+        try:
+            return json.loads(v[len(_LIST_PREFIX):])
+        except json.JSONDecodeError:
+            return []
+    return []
 
 
 class ChromaStore(VectorStore):
@@ -44,7 +75,7 @@ class ChromaStore(VectorStore):
             return
         ids = [c.id for c in chunks]
         documents = [c.text for c in chunks]
-        metadatas = self._chunks_payload(chunks)
+        metadatas = [_sanitize(m) for m in self._chunks_payload(chunks)]
         self.col.upsert(
             ids=ids,
             embeddings=vectors.tolist(),
@@ -155,14 +186,14 @@ def _md_to_chunk(_id: str, text: str, md: dict) -> Chunk:
         page_number=md.get("page_number"),
         token_count=md.get("token_count"),
         title=md.get("title"),
-        authors=md.get("authors") or [],
+        authors=_decode_list(md.get("authors")),
         journal=md.get("journal"),
         publication_date=pub_date,
         doi=md.get("doi"),
         pmid=md.get("pmid"),
         arxiv_id=md.get("arxiv_id"),
-        mesh_terms=md.get("mesh_terms") or [],
-        publication_types=md.get("publication_types") or [],
+        mesh_terms=_decode_list(md.get("mesh_terms")),
+        publication_types=_decode_list(md.get("publication_types")),
         source=Source(md.get("source") or Source.MANUAL.value),
         url=md.get("url"),
         citation_token=md.get("citation_token"),
