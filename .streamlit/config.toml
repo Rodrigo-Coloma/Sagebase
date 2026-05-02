@@ -1,0 +1,9 @@
+[server]
+maxUploadSize = 50  # MB — keep under Streamlit Cloud's per-request budget
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "light"
+primaryColor = "#0b6efd"

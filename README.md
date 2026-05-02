@@ -198,11 +198,48 @@ tests/            # pytest with mocked HTTP via respx
 
 ## Frontend
 
-The repository ships **no frontend**: the surface area is the CLI (`medlit`)
-and the JSON / SSE REST API. The API is CORS-enabled (`*` origins) so any
-client can be plugged in. If you'd like a UI, the streaming `/ask` endpoint
-emits standard SSE frames (`sources`, `token`, `done`) and is easy to consume
-from anything.
+The primary surfaces are the CLI (`medlit`) and the FastAPI REST/SSE API.
+A **Streamlit** app is also bundled (`streamlit_app.py`) for one-click
+deploys to [Streamlit Community Cloud](https://share.streamlit.io). The
+Streamlit build is tuned for the 1 GB free tier: OpenAI embeddings,
+ChromaDB vector store (no Qdrant container needed), reranker disabled,
+Anthropic Claude for generation.
+
+### Deploy to Streamlit Cloud (works from a phone)
+
+1. Push this branch to GitHub (already done).
+2. On your phone, go to **share.streamlit.io** → sign in with GitHub.
+3. *New app*:
+   - Repository: `Rodrigo-Coloma/sagebase`
+   - Branch: `claude/medical-literature-rag-nfmts`
+   - Main file path: `streamlit_app.py`
+4. *Advanced settings → Secrets*: paste at minimum
+   ```toml
+   OPENAI_API_KEY = "sk-..."
+   ANTHROPIC_API_KEY = "sk-ant-..."
+   NCBI_EMAIL = "you@example.com"
+   UNPAYWALL_EMAIL = "you@example.com"
+   ```
+   (full template: `.streamlit/secrets.toml.example`)
+5. *Deploy*. First boot takes ~3 min while it builds the wheel cache.
+
+### Run the Streamlit app locally
+
+```bash
+pip install -r requirements.txt
+cp .streamlit/secrets.toml.example .streamlit/secrets.toml  # then edit
+streamlit run streamlit_app.py
+```
+
+The app has three tabs:
+- **Ask** — RAG with streamed Claude tokens and source list above the answer.
+- **Search** — hybrid retrieval with optional MMR diversity and journal filter.
+- **Ingest** — PubMed search, bioRxiv/medRxiv, DOI lookup, or PDF/XML/TXT upload.
+
+> **Note on persistence**: ChromaDB writes to `./data/chroma` in the
+> Streamlit Cloud container, which is wiped when the app reboots. For
+> durable storage across reboots, set `QDRANT_URL` to a Qdrant Cloud
+> cluster — `medlit` will switch backends automatically.
 
 ## Development
 

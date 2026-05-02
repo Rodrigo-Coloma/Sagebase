@@ -41,6 +41,7 @@ data/embeddings/
 .env
 .env.local
 *.key
+.streamlit/secrets.toml
 
 # Logs
 *.log
