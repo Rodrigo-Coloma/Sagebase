@@ -1,0 +1,36 @@
+# Saved PubMed (and other source) queries that auto-pull on a schedule.
+# Each watch is run by the APScheduler service in src/medlit/scheduler/watches.py
+#
+# cron format: "minute hour day-of-month month day-of-week"
+# interval format: "every: <n><unit>" where unit in s|m|h|d  (e.g. "every: 12h")
+
+watches:
+  - name: crispr-base-editing
+    source: pubmed
+    query: "CRISPR base editing"
+    max_results: 200
+    schedule:
+      cron: "0 6 * * *"           # daily at 06:00
+    filters:
+      date_window_days: 30        # only pull last 30 days each run
+
+  - name: rna-therapeutics
+    source: pubmed
+    query: "(siRNA OR mRNA therapeutic OR antisense oligonucleotide) AND clinical trial"
+    max_results: 100
+    schedule:
+      every: 12h
+
+  - name: medrxiv-precision-oncology
+    source: medrxiv
+    query: "precision oncology"
+    max_results: 50
+    schedule:
+      cron: "0 7 * * 1"           # Monday 07:00
+
+  - name: arxiv-biomed-ml
+    source: arxiv
+    query: "cat:q-bio.QM AND (deep learning OR transformer)"
+    max_results: 50
+    schedule:
+      every: 1d

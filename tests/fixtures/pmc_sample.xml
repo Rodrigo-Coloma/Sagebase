@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pmc-articleset>
+  <article>
+    <front>
+      <title-group>
+        <article-title>Off-target effects of base editors</article-title>
+      </title-group>
+    </front>
+    <body>
+      <abstract>
+        <p>We characterize off-target editing in primary cells.</p>
+      </abstract>
+      <sec>
+        <title>Introduction</title>
+        <p>Base editors enable precise edits without DSBs.</p>
+      </sec>
+      <sec>
+        <title>Methods</title>
+        <p>We performed whole-genome sequencing in HEK293T cells.</p>
+        <sec>
+          <title>Cell culture</title>
+          <p>Cells were maintained in DMEM with 10% FBS.</p>
+        </sec>
+      </sec>
+      <sec>
+        <title>Results</title>
+        <p>Off-target rates were below 0.1% across 12 sites.</p>
+        <table-wrap id="t1">
+          <label>Table 1</label>
+          <caption><p>Off-target rates by site.</p></caption>
+        </table-wrap>
+      </sec>
+    </body>
+  </article>
+</pmc-articleset>

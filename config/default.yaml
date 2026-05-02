@@ -1,0 +1,55 @@
+# medlit default configuration
+# Environment variables in .env override these.
+
+embedding:
+  backend: sentence_transformers   # sentence_transformers | openai | voyage
+  model: BAAI/bge-large-en-v1.5
+  batch_size: 32
+  cache_dir: ./data/cache/embeddings
+
+vector_store:
+  backend: qdrant                  # qdrant | chroma | pgvector
+  collection: medlit
+  qdrant:
+    url: http://localhost:6333
+  chroma:
+    persist_dir: ./data/chroma
+  pgvector:
+    dsn: postgresql://medlit:medlit@localhost:5432/medlit
+
+chunking:
+  chunk_size: 512                  # tokens
+  chunk_overlap: 50
+  respect_sections: true
+  keep_tables_intact: true
+
+retrieval:
+  top_k_dense: 30
+  top_k_sparse: 30
+  rrf_k: 60
+  rerank_top_k: 10
+  use_mmr: false
+  mmr_lambda: 0.5
+
+reranker:
+  model: BAAI/bge-reranker-large
+  enabled: true
+
+generation:
+  backend: anthropic
+  model: claude-sonnet-4-5
+  max_tokens: 1024
+  temperature: 0.2
+  stream: true
+
+ingestion:
+  pubmed:
+    rate_limit_rps: 10             # with API key; 3 without
+    batch_size: 100
+  unpaywall:
+    enabled: true
+  open_access_only_fulltext: true
+
+logging:
+  level: INFO
+  format: "{time:YYYY-MM-DD HH:mm:ss} | {level:<8} | {name}:{function}:{line} - {message}"

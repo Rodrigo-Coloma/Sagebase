@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<PubmedArticleSet>
+  <PubmedArticle>
+    <MedlineCitation Status="MEDLINE">
+      <PMID Version="1">11111111</PMID>
+      <Article>
+        <Journal>
+          <Title>Nature</Title>
+          <JournalIssue>
+            <PubDate>
+              <Year>2023</Year>
+              <Month>Aug</Month>
+              <Day>15</Day>
+            </PubDate>
+          </JournalIssue>
+        </Journal>
+        <ArticleTitle>Adenine base editor with reduced off-target effects</ArticleTitle>
+        <Abstract>
+          <AbstractText Label="BACKGROUND">Off-target editing limits clinical use.</AbstractText>
+          <AbstractText Label="RESULTS">A new variant reduces bystander edits.</AbstractText>
+        </Abstract>
+        <AuthorList>
+          <Author>
+            <LastName>Liu</LastName>
+            <ForeName>David</ForeName>
+            <Affiliation>Broad Institute</Affiliation>
+          </Author>
+          <Author>
+            <LastName>Smith</LastName>
+            <ForeName>Jane</ForeName>
+          </Author>
+        </AuthorList>
+        <PublicationTypeList>
+          <PublicationType>Journal Article</PublicationType>
+          <PublicationType>Randomized Controlled Trial</PublicationType>
+        </PublicationTypeList>
+      </Article>
+      <MeshHeadingList>
+        <MeshHeading>
+          <DescriptorName>CRISPR-Cas Systems</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName>Gene Editing</DescriptorName>
+        </MeshHeading>
+      </MeshHeadingList>
+      <KeywordList>
+        <Keyword>base editing</Keyword>
+      </KeywordList>
+    </MedlineCitation>
+    <PubmedData>
+      <ArticleIdList>
+        <ArticleId IdType="pubmed">11111111</ArticleId>
+        <ArticleId IdType="doi">10.1038/s41586-023-99999</ArticleId>
+        <ArticleId IdType="pmc">PMC9999999</ArticleId>
+      </ArticleIdList>
+    </PubmedData>
+  </PubmedArticle>
+  <PubmedArticle>
+    <MedlineCitation Status="MEDLINE">
+      <PMID Version="1">22222222</PMID>
+      <Article>
+        <Journal>
+          <Title>Cell</Title>
+          <JournalIssue>
+            <PubDate>
+              <MedlineDate>2024 Spring</MedlineDate>
+            </PubDate>
+          </JournalIssue>
+        </Journal>
+        <ArticleTitle>Delivery of CRISPR therapeutics in vivo</ArticleTitle>
+        <Abstract>
+          <AbstractText>LNP and AAV are the leading platforms.</AbstractText>
+        </Abstract>
+        <AuthorList>
+          <Author>
+            <CollectiveName>Editas Consortium</CollectiveName>
+          </Author>
+        </AuthorList>
+        <PublicationTypeList>
+          <PublicationType>Review</PublicationType>
+        </PublicationTypeList>
+      </Article>
+    </MedlineCitation>
+    <PubmedData>
+      <ArticleIdList>
+        <ArticleId IdType="pubmed">22222222</ArticleId>
+        <ArticleId IdType="doi">10.1016/j.cell.2024.00001</ArticleId>
+      </ArticleIdList>
+    </PubmedData>
+  </PubmedArticle>
+</PubmedArticleSet>

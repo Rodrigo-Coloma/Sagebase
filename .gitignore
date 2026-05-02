@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+.venv/
+venv/
+env/
+
+# Tooling caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.tox/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# Editors
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Project data
+data/cache/
+data/papers/
+data/qdrant/
+data/embeddings/
+*.sqlite
+*.db
+
+# Secrets
+.env
+.env.local
+*.key
+
+# Logs
+*.log
+logs/
