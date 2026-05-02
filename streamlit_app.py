@@ -17,8 +17,22 @@ import os
 import queue
 import sys
 import threading
+import traceback
 from datetime import date
 from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Workarounds — MUST run before any chromadb / streamlit-protobuf import.
+# ---------------------------------------------------------------------------
+# 1) chromadb's bundled _pb2 modules (via posthog + opentelemetry) were
+#    generated with old protoc and crash on Streamlit Cloud's protobuf
+#    runtime ("Descriptors cannot be created directly"). Forcing the
+#    pure-Python implementation sidesteps the descriptor check.
+os.environ.setdefault("PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION", "python")
+# 2) Disable chromadb telemetry — it's the source of those _pb2 imports
+#    and we don't need it in a demo.
+os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
+os.environ.setdefault("CHROMA_TELEMETRY", "False")
 
 import streamlit as st
 
@@ -111,8 +125,8 @@ def stream_async(coro_factory):  # type: ignore[no-untyped-def]
             try:
                 async for item in coro_factory():
                     q.put(item)
-            except Exception as e:  # noqa: BLE001
-                q.put(("__error__", repr(e)))
+            except Exception:  # noqa: BLE001
+                q.put(("__error__", traceback.format_exc()))
             finally:
                 q.put(sentinel)
 

@@ -25,8 +25,11 @@ langchain-text-splitters>=0.2
 # Document processing
 pymupdf>=1.24
 
-# Vector store: ChromaDB (in-process, persistent)
-chromadb>=0.5
+# Vector store: ChromaDB (in-process, persistent).
+# Pin chromadb to a recent stable that ships fresh _pb2 files; pin protobuf
+# to <5 to match Streamlit's bundled descriptor format.
+chromadb>=0.5.20,<0.6
+protobuf>=4.25.3,<5
 rank-bm25>=0.2.2
 
 # Embeddings (cloud default)
