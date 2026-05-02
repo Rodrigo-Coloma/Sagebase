@@ -14,7 +14,7 @@ import numpy as np
 
 from medlit.logging import logger
 from medlit.models import Chunk, Source
-from medlit.storage.base import SearchFilter, VectorStore
+from medlit.storage.base import PaperSummary, SearchFilter, VectorStore
 
 
 class PgVectorStore(VectorStore):
@@ -149,6 +149,44 @@ class PgVectorStore(VectorStore):
             )
             rows = cur.fetchall()
         return [_row_to_chunk(r[0], r[1], r[2]) for r in rows]
+
+    def list_papers(self) -> list[PaperSummary]:
+        with self.conn.cursor() as cur:
+            cur.execute(
+                f"""
+                SELECT paper_id, COUNT(*) AS n,
+                       (array_agg(metadata ORDER BY (metadata->>'chunk_index')::int))[1] AS md
+                FROM {self.table}
+                GROUP BY paper_id
+                """
+            )
+            rows = cur.fetchall()
+        out: list[PaperSummary] = []
+        for paper_id, n, md in rows:
+            md = md or {}
+            pub_date_str = md.get("publication_date")
+            try:
+                pub_date = date.fromisoformat(pub_date_str) if pub_date_str else None
+            except (TypeError, ValueError):
+                pub_date = None
+            out.append(
+                PaperSummary(
+                    paper_id=paper_id,
+                    title=md.get("title"),
+                    authors=md.get("authors") or [],
+                    journal=md.get("journal"),
+                    publication_date=pub_date,
+                    source=Source(md.get("source") or Source.MANUAL.value),
+                    doi=md.get("doi"),
+                    pmid=md.get("pmid"),
+                    arxiv_id=md.get("arxiv_id"),
+                    url=md.get("url"),
+                    citation_token=md.get("citation_token"),
+                    chunk_count=int(n),
+                )
+            )
+        out.sort(key=lambda p: (p.publication_date is None, p.publication_date), reverse=True)
+        return out
 
     def stats(self) -> dict[str, object]:
         with self.conn.cursor() as cur:

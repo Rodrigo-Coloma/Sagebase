@@ -11,7 +11,7 @@ from rank_bm25 import BM25Okapi
 
 from medlit.logging import logger
 from medlit.models import Chunk, Source
-from medlit.storage.base import SearchFilter, VectorStore
+from medlit.storage.base import PaperSummary, SearchFilter, VectorStore
 
 # ChromaDB rejects metadata values that are None or list[*]. We drop None and
 # JSON-encode lists with this prefix so we can recover them on read.
@@ -133,6 +133,42 @@ class ChromaStore(VectorStore):
         res = self.col.get(where={"paper_id": paper_id})
         out = [_md_to_chunk(i, d, m) for i, d, m in zip(res["ids"], res["documents"], res["metadatas"], strict=True)]
         out.sort(key=lambda c: c.chunk_index)
+        return out
+
+    def list_papers(self) -> list[PaperSummary]:
+        res = self.col.get()
+        by_paper: dict[str, dict] = {}
+        counts: dict[str, int] = {}
+        for md in res.get("metadatas") or []:
+            pid = md.get("paper_id")
+            if not pid:
+                continue
+            counts[pid] = counts.get(pid, 0) + 1
+            by_paper.setdefault(pid, md)
+        out: list[PaperSummary] = []
+        for pid, md in by_paper.items():
+            pub_date_str = md.get("publication_date")
+            try:
+                pub_date = date.fromisoformat(pub_date_str) if pub_date_str else None
+            except (TypeError, ValueError):
+                pub_date = None
+            out.append(
+                PaperSummary(
+                    paper_id=pid,
+                    title=md.get("title"),
+                    authors=_decode_list(md.get("authors")),
+                    journal=md.get("journal"),
+                    publication_date=pub_date,
+                    source=Source(md.get("source") or Source.MANUAL.value),
+                    doi=md.get("doi"),
+                    pmid=md.get("pmid"),
+                    arxiv_id=md.get("arxiv_id"),
+                    url=md.get("url"),
+                    citation_token=md.get("citation_token"),
+                    chunk_count=counts[pid],
+                )
+            )
+        out.sort(key=lambda p: (p.publication_date is None, p.publication_date), reverse=True)
         return out
 
     def stats(self) -> dict[str, object]:

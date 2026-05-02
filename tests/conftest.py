@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from medlit.models import Chunk, Source
-from medlit.storage.base import SearchFilter, VectorStore
+from medlit.storage.base import PaperSummary, SearchFilter, VectorStore
 
 
 class FakeEmbedder:
@@ -85,6 +85,30 @@ class InMemoryStore(VectorStore):
             (c for c in self.chunks.values() if c.paper_id == paper_id),
             key=lambda c: c.chunk_index,
         )
+
+    def list_papers(self) -> list[PaperSummary]:
+        by_paper: dict[str, Chunk] = {}
+        counts: dict[str, int] = {}
+        for c in self.chunks.values():
+            counts[c.paper_id] = counts.get(c.paper_id, 0) + 1
+            by_paper.setdefault(c.paper_id, c)
+        return [
+            PaperSummary(
+                paper_id=pid,
+                title=c.title,
+                authors=list(c.authors),
+                journal=c.journal,
+                publication_date=c.publication_date,
+                source=c.source,
+                doi=c.doi,
+                pmid=c.pmid,
+                arxiv_id=c.arxiv_id,
+                url=c.url,
+                citation_token=c.citation_token,
+                chunk_count=counts[pid],
+            )
+            for pid, c in by_paper.items()
+        ]
 
     def stats(self) -> dict[str, object]:
         return {"vectors_count": len(self.chunks)}

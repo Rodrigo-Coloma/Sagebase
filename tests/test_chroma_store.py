@@ -72,3 +72,11 @@ def test_chroma_upsert_with_none_metadata(tmp_path: Path):
     assert got[0].authors == ["Liu D"]
     assert got[0].mesh_terms == []
     assert got[0].section is None
+
+    papers = store.list_papers()
+    assert len(papers) == 1
+    p = papers[0]
+    assert p.paper_id == "p1"
+    assert p.authors == ["Liu D"]
+    assert p.chunk_count == 1
+    assert p.citation_token == "PMID:1"

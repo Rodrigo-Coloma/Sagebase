@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 
 import numpy as np
 
-from medlit.models import Chunk
+from medlit.models import Chunk, Source
 
 
 @dataclass(slots=True)
@@ -24,6 +24,24 @@ class SearchFilter:
     publication_types: list[str] | None = None
     sources: list[str] | None = None
     paper_ids: list[str] | None = None
+
+
+@dataclass(slots=True)
+class PaperSummary:
+    """One row per indexed paper, aggregated across its chunks."""
+
+    paper_id: str
+    title: str | None = None
+    authors: list[str] = field(default_factory=list)
+    journal: str | None = None
+    publication_date: date | None = None
+    source: Source = Source.MANUAL
+    doi: str | None = None
+    pmid: str | None = None
+    arxiv_id: str | None = None
+    url: str | None = None
+    citation_token: str | None = None
+    chunk_count: int = 0
 
 
 class VectorStore(ABC):
@@ -62,6 +80,11 @@ class VectorStore(ABC):
 
     @abstractmethod
     def get_paper_chunks(self, paper_id: str) -> list[Chunk]:
+        ...
+
+    @abstractmethod
+    def list_papers(self) -> list[PaperSummary]:
+        """Aggregate all chunks into one row per paper."""
         ...
 
     @abstractmethod

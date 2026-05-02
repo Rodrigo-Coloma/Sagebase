@@ -19,7 +19,7 @@ from rank_bm25 import BM25Okapi
 
 from medlit.logging import logger
 from medlit.models import Chunk, Source
-from medlit.storage.base import SearchFilter, VectorStore
+from medlit.storage.base import PaperSummary, SearchFilter, VectorStore
 
 
 def _chunk_id_to_uuid(chunk_id: str) -> str:
@@ -158,6 +158,52 @@ class QdrantStore(VectorStore):
             if offset is None:
                 break
         out.sort(key=lambda c: c.chunk_index)
+        return out
+
+    def list_papers(self) -> list[PaperSummary]:
+        by_paper: dict[str, dict] = {}
+        counts: dict[str, int] = {}
+        offset: int | str | None = None
+        while True:
+            points, offset = self.client.scroll(
+                collection_name=self.collection,
+                limit=512,
+                with_payload=True,
+                offset=offset,
+            )
+            for p in points:
+                payload = p.payload or {}
+                pid = payload.get("paper_id")
+                if not pid:
+                    continue
+                counts[pid] = counts.get(pid, 0) + 1
+                by_paper.setdefault(pid, payload)
+            if offset is None:
+                break
+        out: list[PaperSummary] = []
+        for pid, payload in by_paper.items():
+            pub_date_str = payload.get("publication_date")
+            try:
+                pub_date = date.fromisoformat(pub_date_str) if pub_date_str else None
+            except (TypeError, ValueError):
+                pub_date = None
+            out.append(
+                PaperSummary(
+                    paper_id=pid,
+                    title=payload.get("title"),
+                    authors=payload.get("authors") or [],
+                    journal=payload.get("journal"),
+                    publication_date=pub_date,
+                    source=Source(payload.get("source") or Source.MANUAL.value),
+                    doi=payload.get("doi"),
+                    pmid=payload.get("pmid"),
+                    arxiv_id=payload.get("arxiv_id"),
+                    url=payload.get("url"),
+                    citation_token=payload.get("citation_token"),
+                    chunk_count=counts[pid],
+                )
+            )
+        out.sort(key=lambda p: (p.publication_date is None, p.publication_date), reverse=True)
         return out
 
     def stats(self) -> dict[str, object]:

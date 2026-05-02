@@ -174,7 +174,9 @@ with st.sidebar:
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
-tab_ask, tab_search, tab_ingest = st.tabs(["💬 Ask", "🔎 Search", "📥 Ingest"])
+tab_ask, tab_search, tab_library, tab_ingest = st.tabs(
+    ["💬 Ask", "🔎 Search", "📚 Library", "📥 Ingest"]
+)
 
 
 # -------------------- Ask --------------------
@@ -274,6 +276,72 @@ with tab_search:
                     st.write(r.chunk.text)
                     if r.chunk.url:
                         st.markdown(f"[Open source]({r.chunk.url})")
+
+
+# -------------------- Library --------------------
+with tab_library:
+    st.subheader("Indexed papers")
+    cols = st.columns([3, 1])
+    with cols[0]:
+        filter_text = st.text_input(
+            "Filter (title / journal / author / citation)", value="", key="lib_filter"
+        )
+    with cols[1]:
+        st.caption(" ")  # vertical alignment
+        if st.button("🔄 Refresh", use_container_width=True, key="lib_refresh"):
+            st.rerun()
+
+    try:
+        papers = _pipeline().store.list_papers()
+    except Exception as e:  # noqa: BLE001
+        st.exception(e)
+        papers = []
+
+    if not papers:
+        st.info("No papers indexed yet. Open the **Ingest** tab to add some.")
+    else:
+        if filter_text.strip():
+            needle = filter_text.lower()
+            papers = [
+                p
+                for p in papers
+                if needle in (p.title or "").lower()
+                or needle in (p.journal or "").lower()
+                or needle in (p.citation_token or "").lower()
+                or any(needle in a.lower() for a in p.authors)
+            ]
+
+        st.caption(f"{len(papers)} paper(s).")
+        rows = [
+            {
+                "Title": p.title or "(untitled)",
+                "Authors": (
+                    ", ".join(p.authors[:3])
+                    + (" et al." if len(p.authors) > 3 else "")
+                ),
+                "Journal": p.journal or "",
+                "Date": p.publication_date.isoformat() if p.publication_date else "",
+                "Source": p.source.value if hasattr(p.source, "value") else str(p.source),
+                "Citation": p.citation_token or "",
+                "Chunks": p.chunk_count,
+                "Link": p.url or "",
+            }
+            for p in papers
+        ]
+        st.dataframe(
+            rows,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Title": st.column_config.TextColumn(width="large"),
+                "Authors": st.column_config.TextColumn(width="medium"),
+                "Date": st.column_config.TextColumn(width="small"),
+                "Source": st.column_config.TextColumn(width="small"),
+                "Chunks": st.column_config.NumberColumn(width="small"),
+                "Link": st.column_config.LinkColumn("Link", display_text="open"),
+            },
+            height=min(600, 60 + 35 * len(papers)),
+        )
 
 
 # -------------------- Ingest --------------------
