@@ -42,9 +42,42 @@ class QdrantStore(VectorStore):
 
     # -------------------------------------------------------------- collection
     def ensure_collection(self, *, dimension: int) -> None:
-        existing = {c.name for c in self.client.get_collections().collections}
-        if self.collection in existing:
-            return
+        """Create the collection if missing, or validate its dimension.
+
+        Catches the common foot-gun where the embedder configuration changes
+        (e.g. switching from BGE 1024 -> OpenAI 3072) but the existing Qdrant
+        collection was created at the old dim. Without this check Qdrant
+        silently rejects every upsert, the per-paper try/except in the
+        ingestion pipeline swallows it, and ingestion 'completes' with
+        processed=0.
+        """
+        try:
+            info = self.client.get_collection(self.collection)
+        except Exception:
+            info = None  # collection does not exist
+
+        if info is not None:
+            existing_dim = self._existing_dim(info)
+            if existing_dim == dimension:
+                return
+            count = int(info.points_count or 0)
+            if count == 0:
+                logger.warning(
+                    f"qdrant collection {self.collection!r} dim mismatch "
+                    f"(existing {existing_dim} != embedder {dimension}); "
+                    f"empty collection — recreating"
+                )
+                self.client.delete_collection(self.collection)
+            else:
+                raise RuntimeError(
+                    f"Qdrant collection {self.collection!r} has dimension "
+                    f"{existing_dim} but the embedder produces {dimension}-dim "
+                    f"vectors. {count} existing vectors would be invalidated. "
+                    f"To proceed, wipe the collection manually:\n"
+                    f"  curl -X DELETE {self.client._client.host}:"
+                    f"{self.client._client.port}/collections/{self.collection}"
+                )
+
         logger.info(f"creating qdrant collection {self.collection!r} dim={dimension}")
         self.client.create_collection(
             collection_name=self.collection,
@@ -70,6 +103,22 @@ class QdrantStore(VectorStore):
                 )
             except Exception as e:  # noqa: BLE001
                 logger.debug(f"payload index {field}: {e}")
+
+    @staticmethod
+    def _existing_dim(info: object) -> int | None:
+        """Pull the vector size out of qdrant's CollectionInfo, tolerating
+        both single-vector and named-vector configs."""
+        try:
+            vectors = info.config.params.vectors  # type: ignore[attr-defined]
+            if hasattr(vectors, "size"):
+                return int(vectors.size)
+            if isinstance(vectors, dict):
+                # Named vectors: take the first one's size for our single-vector use.
+                first = next(iter(vectors.values()))
+                return int(first.size)
+        except Exception:  # noqa: BLE001
+            return None
+        return None
 
     # ---------------------------------------------------------------- upsert
     def upsert(self, chunks: Sequence[Chunk], vectors: np.ndarray) -> None:
