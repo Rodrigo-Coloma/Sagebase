@@ -18,7 +18,10 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 COPY config ./config
 
-RUN pip install --upgrade pip && pip install .
+# Install with the API-backed embedder/generator extras so backend can be
+# switched via .env without rebuilding (openai, voyage, ollama clients are
+# all small SDKs; chroma stays out — too heavy for users who'll never use it).
+RUN pip install --upgrade pip && pip install ".[openai,voyage,ollama]"
 
 EXPOSE 8000
 
