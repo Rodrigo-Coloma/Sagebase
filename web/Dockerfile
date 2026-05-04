@@ -8,8 +8,12 @@ RUN npm install --no-audit --no-fund
 
 # Build.
 COPY . .
-ARG VITE_API_BASE=/api
-ENV VITE_API_BASE=$VITE_API_BASE
+# Sub-path support: pass VITE_BASE_PATH=/medlit/ to deploy under a sub-path.
+# VITE_API_BASE defaults to ${VITE_BASE_PATH}api so a single var is usually enough.
+ARG VITE_BASE_PATH=/
+ARG VITE_API_BASE
+ENV VITE_BASE_PATH=$VITE_BASE_PATH
+ENV VITE_API_BASE=${VITE_API_BASE:-${VITE_BASE_PATH}api}
 RUN npm run build
 
 # --- Stage 2: nginx serves static + reverse-proxies /api ----------------------

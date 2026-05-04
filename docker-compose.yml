@@ -37,7 +37,9 @@ services:
     expose:
       - "8000"
     ports:
-      - "8000:8000"
+      # Bind to localhost only — host nginx reverse-proxies the public traffic.
+      # Change to "8000:8000" if you want LAN access without a reverse proxy.
+      - "127.0.0.1:8000:8000"
     depends_on:
       qdrant:
         condition: service_healthy
@@ -51,11 +53,15 @@ services:
     build:
       context: ./web
       args:
-        # Relative path; nginx in this same container proxies /api -> api:8000.
-        VITE_API_BASE: /api
+        # Sub-path support. Set VITE_BASE_PATH and VITE_API_BASE in .env to
+        # deploy under e.g. https://example.com/medlit/. Defaults to root.
+        VITE_BASE_PATH: ${VITE_BASE_PATH:-/}
+        VITE_API_BASE: ${VITE_API_BASE:-${VITE_BASE_PATH:-/}api}
     container_name: medlit-web
     ports:
-      - "8080:80"
+      # Bind to localhost only — host nginx reverse-proxies the public traffic.
+      # Change to "8080:80" if you want LAN access without a reverse proxy.
+      - "127.0.0.1:8080:80"
     depends_on:
       - api
     restart: unless-stopped

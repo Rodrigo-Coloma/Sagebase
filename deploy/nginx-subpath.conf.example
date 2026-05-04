@@ -1,0 +1,52 @@
+# Example: serve medlit at https://yourdomain.tld/medlit/ behind your existing
+# nginx (which already terminates TLS and serves your portfolio at /).
+#
+# Drop this INSIDE your existing `server { listen 443 ssl; ... }` block, OR
+# include it from /etc/nginx/snippets and reference it from the server block.
+#
+# Prereqs:
+#   1. medlit-web is bound to 127.0.0.1:8080 (default in our docker-compose.yml).
+#   2. The SPA was built with VITE_BASE_PATH=/medlit/ and VITE_API_BASE=/medlit/api.
+#      (Set those in .env, then `docker compose up -d --build web`.)
+#
+# After editing your nginx config:
+#   sudo nginx -t && sudo systemctl reload nginx
+#
+# If you serve under a different sub-path, replace every occurrence of /medlit
+# with your prefix.
+
+# Redirect bare /medlit -> /medlit/ so the SPA loads with the right base href.
+location = /medlit {
+    return 301 /medlit/;
+}
+
+# Proxy the SPA + its bundled API. The trailing slash on proxy_pass strips
+# /medlit/ from the URI before forwarding, so:
+#   /medlit/             -> http://127.0.0.1:8080/
+#   /medlit/assets/x.js  -> http://127.0.0.1:8080/assets/x.js
+#   /medlit/api/search   -> http://127.0.0.1:8080/api/search
+location ^~ /medlit/ {
+    proxy_pass http://127.0.0.1:8080/;
+
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host  $host;
+    proxy_set_header X-Forwarded-Prefix /medlit;
+
+    # SSE / streaming responses must NOT be buffered or chunk-rewritten.
+    # The streamed /ask endpoint uses these.
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_buffering off;
+    proxy_cache off;
+    chunked_transfer_encoding off;
+
+    # Long-running ingest jobs and long Claude responses.
+    proxy_read_timeout 24h;
+    proxy_send_timeout 24h;
+
+    # File uploads up to 50 MB (matches medlit's manual ingest cap).
+    client_max_body_size 50m;
+}
