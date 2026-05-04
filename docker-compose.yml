@@ -34,6 +34,11 @@ services:
     env_file: .env
     environment:
       QDRANT_URL: http://qdrant:6333
+      # Persist HuggingFace + sentence-transformers model cache to the bind mount
+      # so a container restart doesn't re-download ~1.3 GB of BGE / reranker.
+      HF_HOME: /app/data/cache/hf
+      TRANSFORMERS_CACHE: /app/data/cache/hf
+      SENTENCE_TRANSFORMERS_HOME: /app/data/cache/hf
     expose:
       - "8000"
     ports:
