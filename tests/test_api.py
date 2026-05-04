@@ -106,6 +106,21 @@ def test_papers_get():
         assert chunks[0]["paper_id"] == "p1"
 
 
+def test_papers_list():
+    with TestClient(app) as client:
+        r = client.get("/papers")
+        assert r.status_code == 200
+        rows = r.json()
+        assert len(rows) >= 2
+        ids = {row["paper_id"] for row in rows}
+        assert {"p1", "p2"} <= ids
+        # required fields populated
+        for row in rows:
+            assert "chunk_count" in row
+            assert row["chunk_count"] >= 1
+            assert "source" in row
+
+
 def test_ask_streams_sse():
     with TestClient(app) as client:
         with client.stream("POST", "/ask", json={"question": "what is base editing?", "top_k": 2}) as r:

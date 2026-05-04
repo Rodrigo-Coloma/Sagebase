@@ -46,3 +46,8 @@ data/embeddings/
 # Logs
 *.log
 logs/
+
+# Web frontend
+web/node_modules/
+web/dist/
+web/.vite/

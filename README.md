@@ -196,12 +196,83 @@ config/           # default.yaml, watches.yaml
 tests/            # pytest with mocked HTTP via respx
 ```
 
-## Frontend
+## Frontends
 
-The primary surfaces are the CLI (`medlit`) and the FastAPI REST/SSE API.
-A **Streamlit** app is also bundled (`streamlit_app.py`) for one-click
-deploys to [Streamlit Community Cloud](https://share.streamlit.io). The
-Streamlit build is tuned for the 1 GB free tier: OpenAI embeddings,
+You have three options. Pick whichever matches your context:
+
+| Option | Where it runs | Best for |
+|---|---|---|
+| **CLI** (`medlit ...`) | terminal | scripted ingestion, ad-hoc queries |
+| **Streamlit app** (`streamlit_app.py`) | Streamlit Community Cloud | zero-infra demo from a phone |
+| **React SPA** (`web/`) | your own server (Ubuntu mini PC, etc.) | a real production UI under your control |
+
+### React SPA — self-host on Ubuntu
+
+Vite + React + TypeScript + Tailwind. Builds to a ~190 KB JS bundle
+(60 KB gzipped) that nginx serves; nginx also reverse-proxies `/api/*`
+to the FastAPI service with SSE-friendly settings (no buffering, long
+read timeout). All wired up in `docker-compose.yml` — one command.
+
+#### Prerequisites
+- Ubuntu LTS (22.04+ tested) with Docker Engine and Docker Compose v2
+  ```bash
+  curl -fsSL https://get.docker.com | sudo sh
+  sudo usermod -aG docker $USER && newgrp docker
+  ```
+
+#### Bring it up
+```bash
+git clone https://github.com/Rodrigo-Coloma/sagebase.git
+cd sagebase
+git checkout claude/medical-literature-rag-nfmts
+cp .env.example .env
+# Edit .env — at minimum set ANTHROPIC_API_KEY and NCBI_EMAIL.
+# (Self-hosting can use the heavy local-model defaults — BGE embeddings,
+# cross-encoder reranker — since you control the RAM budget.)
+
+docker compose up -d --build
+```
+
+That brings up three containers:
+
+| Service | Port | What it does |
+|---|---|---|
+| `medlit-qdrant` | 6333 | Qdrant vector DB |
+| `medlit-api` | 8000 | FastAPI app (also exposed for direct curl/CLI use) |
+| `medlit-web` | **8080** | Nginx serving the React SPA + proxying `/api/*` |
+
+Open the UI at **http://YOUR-MINI-PC-IP:8080** (or `http://localhost:8080`
+from the box itself).
+
+#### Pages
+- **💬 Ask** — streamed Claude answers with citations rendered above the answer.
+- **🔎 Search** — hybrid retrieval, MMR toggle, journal filter, expandable hit cards.
+- **📚 Library** — table view (responsive: cards on mobile, full table on desktop) with filter, link to source, per-row delete.
+- **📥 Ingest** — PubMed / bioRxiv / arXiv / DOI / file upload, async with a live progress bar polled from `GET /ingest/jobs/{id}`.
+
+#### Reverse proxy / TLS
+For external access, put Caddy or nginx in front of port 8080. Caddy makes TLS trivial:
+
+```caddy
+medlit.example.com {
+  reverse_proxy localhost:8080
+}
+```
+
+#### Local development (without docker)
+```bash
+# In one shell — backend
+uvicorn medlit.api.app:app --reload --port 8000
+
+# In another shell — frontend
+cd web
+npm install
+npm run dev          # http://localhost:5173, vite proxies /api -> :8000
+```
+
+### Streamlit Cloud (mobile-friendly demo)
+
+The Streamlit build is tuned for the 1 GB free tier: OpenAI embeddings,
 ChromaDB vector store (no Qdrant container needed), reranker disabled,
 Anthropic Claude for generation.
 
