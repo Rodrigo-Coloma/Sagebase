@@ -51,3 +51,6 @@ logs/
 web/node_modules/
 web/dist/
 web/.vite/
+
+# docker-compose local overrides (for per-host port shifts, etc.)
+docker-compose.override.yml
